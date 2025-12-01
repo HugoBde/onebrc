@@ -35,3 +35,20 @@ Remaining culprits:
 +   71.44%    47.26%  onebrc           onebrc                onebrc::main
 +   13.68%    13.67%  onebrc           onebrc                core::str::converts::from_utf8
 +   11.89%    11.89%  onebrc           onebrc                core::num::dec2flt::<impl core::str::traits::FromStr for f64>::from_str
+
+# Tackling core::str::converts::from_utf8 PART 1
+We notice that we don't really need to interpret all the bytes as character. utf 8 parsing is probably very expensive due to the checks needed. We partially get rid of utf8 parsing by swapping from f.lines to f.split(b'\n'). We change our hashmap key to be a vec of bytes. Do note we still do utf 8 parsing for the temperature, but it's tightly coupled with the last big culprit, parsing the string into f64. let's see if we can tackle both at the same time
+
+we maintain the use of split_once by switching to the nightly toolchain and enabling the newly added feature slice_split_once because the code for that feature looks very simple and hard to mess up so I trust it
+
+time output:
+real    95.58s
+user    91.46s
+sys     3.87s
+cpu     99%
+
+Remaining culprits:
++   75.22%    49.77%  onebrc           onebrc                               [.] onebrc::main
++   10.65%    10.65%  onebrc           onebrc                               [.] core::num::dec2flt::<impl core::str::traits::FromStr for f64>::from_str
++    7.92%     7.91%  onebrc           onebrc                               [.] core::str::converts::from_utf8 // still here but almost halved
+

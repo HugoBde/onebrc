@@ -1,3 +1,5 @@
+#![feature(slice_split_once)]
+
 use std::collections::HashMap;
 use std::env::args;
 use std::io::BufRead;
@@ -16,12 +18,12 @@ fn main() {
   let f = std::fs::File::open(path).unwrap();
   let f = std::io::BufReader::new(f);
 
-  let mut data = HashMap::<String, Info>::new();
+  let mut data = HashMap::<Vec<u8>, Info>::new();
 
-  for l in f.lines() {
+  for l in f.split(b'\n') {
     let l = l.unwrap();
-    let (station, temp) = l.split_once(';').unwrap();
-    let temp: f64 = temp.parse().unwrap();
+    let (station, temp) = l.split_once(|c| *c == b';').unwrap();
+    let temp: f64 = str::from_utf8(temp).unwrap().parse().unwrap();
 
     match data.get_mut(station) {
       Some(data) => {
@@ -31,7 +33,7 @@ fn main() {
         data.3 += 1;
       }
       None => {
-        data.insert(station.to_string(), (temp, temp, temp, 1));
+        data.insert(station.to_vec(), (temp, temp, temp, 1));
       }
     };
   }
@@ -50,7 +52,10 @@ fn main() {
   for entry in data {
     print!(
       "{}={:.1}/{:.1}/{:.1}, ",
-      entry.0, entry.1.0, entry.1.2, entry.1.1
+      str::from_utf8(&entry.0).unwrap(),
+      entry.1.0,
+      entry.1.2,
+      entry.1.1
     );
   }
   println!("}}");
