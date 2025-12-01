@@ -20,9 +20,8 @@ fn main() {
 
   for l in f.lines() {
     let l = l.unwrap();
-    let mut a = l.split(';');
-    let station = a.next().unwrap();
-    let temp: f64 = a.next().unwrap().parse().unwrap();
+    let (station, temp) = l.split_once(';').unwrap();
+    let temp: f64 = temp.parse().unwrap();
 
     match data.get_mut(station) {
       Some(data) => {

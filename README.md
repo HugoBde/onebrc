@@ -6,6 +6,7 @@ Results:
 
 | Latest Improvement | commit | time |
 |---|---|---|
-| Naive Implementation | e7a25dc | 2:28.380 |
+| Naive Implementation | e7a25dc | 123.6s |
+| Swap split(';') for split_once(';') | ??? | 107.9s |
 
 
