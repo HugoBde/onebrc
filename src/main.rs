@@ -50,7 +50,7 @@ fn main() {
   print!("{{");
   for entry in data {
     print!(
-      "{}={:.1}/{:.1}/{:.1}",
+      "{}={:.1}/{:.1}/{:.1}, ",
       entry.0, entry.1.0, entry.1.2, entry.1.1
     );
   }
