@@ -9,3 +9,5 @@ lto = "fat"
 panic = "abort"
 
 [dependencies]
+rapidhash = "4.1.1"
+rustc-hash = "2.1.1"

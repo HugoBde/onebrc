@@ -69,3 +69,19 @@ Remaining culprits:
 +    8.96%     8.95%  onebrc           onebrc                <std::hash::random::DefaultHasher as core::hash::Hasher>::write
 +    7.29%     7.29%  onebrc           libc.so.6             0x000000000016cb99
 +    6.46%     6.46%  onebrc           libc.so.6             malloc
+
+# Tackling <std::hash::random::DefaultHasher as core::hash::Hasher>::write
+Tackling the first few culprits has dropped the runtime from 120 seconds to 80 seconds, that's a decent 1/3 down. Doing so has revealed some new culprits to target, the first of which is the hashing used with the HashMap. The algorithm used in the std lib HashMap (SipHash 1-3) is somewhat cryptographically secure (it aims at preventing HashDoS attacks). Switching for the FxHash algorithm (used by rustc itself) gives us our next speed up, as we don't need the security provided by SipHash and would much rather process our 1 billion rows asap
+
+time output:
+real    66.71s
+user    62.78s
+sys     3.62s
+cpu     99%
+
+Remaining culprits:
++   99.30%    64.15%  onebrc   onebrc                onebrc::main
++   14.53%     3.32%  onebrc   onebrc                alloc::raw_vec::RawVecInner<A>::reserve::do_reserve_and_handle                                                     ▒
++   11.52%     4.39%  onebrc   onebrc                alloc::raw_vec::RawVecInner<A>::finish_grow                                                                        ▒
++    9.03%     9.03%  onebrc   libc.so.6             0x000000000016cb99                                                                                                 ▒
++    7.13%     7.12%  onebrc   libc.so.6             malloc

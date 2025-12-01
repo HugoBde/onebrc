@@ -1,8 +1,9 @@
 #![feature(slice_split_once)]
 
-use std::collections::HashMap;
 use std::env::args;
 use std::io::BufRead;
+
+use rustc_hash::FxHashMap;
 
 type Info = (i64, i64, i64, u32);
 
@@ -18,7 +19,7 @@ fn main() {
   let f = std::fs::File::open(path).unwrap();
   let f = std::io::BufReader::new(f);
 
-  let mut data = HashMap::<Vec<u8>, Info>::new();
+  let mut data = FxHashMap::<Vec<u8>, Info>::default();
 
   for l in f.split(b'\n') {
     let l = l.unwrap();
