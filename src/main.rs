@@ -39,27 +39,22 @@ fn main() {
   }
 
   let mut data: Vec<_> = data
-    .into_iter()
+    .iter()
     .map(|(key, value)| {
       let min = (value.0 as f64) / 10.0;
       let max = (value.1 as f64) / 10.0;
       let mean = (value.2 as f64) / (value.3 as f64 * 10.0);
-      (key, (min, max, mean))
+      (str::from_utf8(key).unwrap(), (min, max, mean))
     })
     .collect();
 
   data.sort_by(|a, b| a.0.cmp(&b.0));
 
   print!("{{");
-  for entry in data {
-    print!(
-      "{}={:.1}/{:.1}/{:.1}, ",
-      str::from_utf8(&entry.0).unwrap(),
-      entry.1.0,
-      entry.1.2,
-      entry.1.1
-    );
+  for (station, info) in data {
+    print!("{}={:.1}/{:.1}/{:.1}, ", station, info.0, info.2, info.1);
   }
+
   println!("}}");
 }
 
