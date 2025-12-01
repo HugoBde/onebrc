@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::env::args;
 use std::io::BufRead;
 
-type Info = (f64, f64, f64, u32);
+type Info = (i64, i64, i64, u32);
 
 fn main() {
   let args: Vec<_> = args().collect();
@@ -23,7 +23,7 @@ fn main() {
   for l in f.split(b'\n') {
     let l = l.unwrap();
     let (station, temp) = l.split_once(|c| *c == b';').unwrap();
-    let temp: f64 = str::from_utf8(temp).unwrap().parse().unwrap();
+    let temp = my_own_i64_parser(temp);
 
     match data.get_mut(station) {
       Some(data) => {
@@ -41,8 +41,10 @@ fn main() {
   let mut data: Vec<_> = data
     .into_iter()
     .map(|(key, value)| {
-      let mean = value.2 / (value.3 as f64);
-      (key, (value.0, value.1, mean))
+      let min = (value.0 as f64) / 10.0;
+      let max = (value.1 as f64) / 10.0;
+      let mean = (value.2 as f64) / (value.3 as f64 * 10.0);
+      (key, (min, max, mean))
     })
     .collect();
 
@@ -59,4 +61,42 @@ fn main() {
     );
   }
   println!("}}");
+}
+
+fn my_own_i64_parser(bytes: &[u8]) -> i64 {
+  if bytes[0] == b'-' {
+    parse_neg(&bytes[1..])
+  } else {
+    parse_pos(bytes)
+  }
+}
+
+fn parse_neg(bytes: &[u8]) -> i64 {
+  let mut out = 0i64;
+  for byte in bytes {
+    if *byte == b'.' {
+      break;
+    }
+    out *= 10;
+    out -= (byte - b'0') as i64;
+  }
+
+  out -= bytes[bytes.len() - 1] as i64;
+
+  return out;
+}
+
+fn parse_pos(bytes: &[u8]) -> i64 {
+  let mut out = 0i64;
+  for byte in bytes {
+    if *byte == b'.' {
+      break;
+    }
+    out *= 10;
+    out += (byte - b'0') as i64;
+  }
+
+  out += bytes[bytes.len() - 1] as i64;
+
+  return out;
 }

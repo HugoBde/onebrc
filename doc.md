@@ -48,7 +48,22 @@ sys     3.87s
 cpu     99%
 
 Remaining culprits:
-+   75.22%    49.77%  onebrc           onebrc                               [.] onebrc::main
-+   10.65%    10.65%  onebrc           onebrc                               [.] core::num::dec2flt::<impl core::str::traits::FromStr for f64>::from_str
-+    7.92%     7.91%  onebrc           onebrc                               [.] core::str::converts::from_utf8 // still here but almost halved
++   75.22%    49.77%  onebrc           onebrc                               onebrc::main
++   10.65%    10.65%  onebrc           onebrc                               core::num::dec2flt::<impl core::str::traits::FromStr for f64>::from_str
++    7.92%     7.91%  onebrc           onebrc                               core::str::converts::from_utf8 // still here but almost halved
+
+# Tackling core::str::converts::from_utf8 PART 2 and tackling core::num::dec2flt::<impl core::str::traits::FromStr for f64>::from_str
+The last remaining bit of utf8 parsing is when we need to parse the temperature reading. it's also where our other big culprit is. Can we drop both parsing by taking advantage of the guaranteed format: -?\d\d?.\d
+Turns out we can, so we do that. 
+
+time output:
+real    81.19s
+user    76.87s
+sys     4.07s
+cpu     99%
+
+Remaining culprits:
++   79.92%    61.74%  onebrc           onebrc                onebrc::main
++    8.26%     8.25%  onebrc           onebrc                <std::hash::random::DefaultHasher as core::hash::Hasher>::write
++    7.74%     7.74%  onebrc           libc.so.6             0x000000000016cb99
 
