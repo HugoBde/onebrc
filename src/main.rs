@@ -1,8 +1,8 @@
 #![feature(slice_split_once)]
 
 use std::env::args;
-use std::io::BufRead;
 
+use memmap2::Mmap;
 use rustc_hash::FxHashMap;
 
 type Info = (i64, i64, i64, u32);
@@ -17,12 +17,15 @@ fn main() {
   };
 
   let f = std::fs::File::open(path).unwrap();
-  let f = std::io::BufReader::new(f);
+  let mmap = unsafe { Mmap::map(&f).unwrap() };
 
-  let mut data = FxHashMap::<Vec<u8>, Info>::default();
+  let mut data = FxHashMap::<&[u8], Info>::default();
 
-  for l in f.split(b'\n') {
-    let l = l.unwrap();
+  for l in mmap.split(|c| *c == b'\n') {
+    if l.is_empty() {
+      break;
+    }
+
     let (station, temp) = l.split_once(|c| *c == b';').unwrap();
     let temp = my_own_i64_parser(temp);
 
@@ -34,7 +37,7 @@ fn main() {
         data.3 += 1;
       }
       None => {
-        data.insert(station.to_vec(), (temp, temp, temp, 1));
+        data.insert(station, (temp, temp, temp, 1));
       }
     };
   }

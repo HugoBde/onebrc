@@ -79,9 +79,24 @@ user    62.78s
 sys     3.62s
 cpu     99%
 
-Remaining culprits:
-+   99.30%    64.15%  onebrc   onebrc                onebrc::main
-+   14.53%     3.32%  onebrc   onebrc                alloc::raw_vec::RawVecInner<A>::reserve::do_reserve_and_handle                                                     ▒
-+   11.52%     4.39%  onebrc   onebrc                alloc::raw_vec::RawVecInner<A>::finish_grow                                                                        ▒
-+    9.03%     9.03%  onebrc   libc.so.6             0x000000000016cb99                                                                                                 ▒
-+    7.13%     7.12%  onebrc   libc.so.6             malloc
+# mmap'ing the file
+Ok, at this point, most actual expensive functions have been eliminated. Now let's look at functions who are expensive with their children. 
+The first one we can easily tackle is the whole BufReader reading calls:
++   30.58%     0.00%  onebrc   onebrc                std::io::BufRead::read_until (inlined)
++   30.58%     0.00%  onebrc   onebrc                std::io::read_until (inlined)
+Let's get rid of read calls and instead mmap the file into RAM cache and ask the OS to let us directly address this area of memory, instead of copying it to ours repeatedly
+
+time output:
+real    42.97s
+user    40.60s
+sys     2.12s
+cpu     99%
+
+Another optimisation mmap'ing does is it means that the lifetime of the station name is the lifetime of the mmap (basically the whole program) as opposed to the lifetime of the line it was on. That means we can switch our keys from owned vecs of bytes to references to the mmap'ed memory region instead, getting rid of lots of potential copying. jk, it doesn't change much because we only do a copy when we encounter a new station, which rarely ever happens, but it still feels really nice to get rid of that copy so I'll keep it. the slight time decrease is more likely noise than actual improvement from this change.
+
+time output:
+real    41.87s
+user    39.51s
+sys     2.14s
+cpu     99%
+
