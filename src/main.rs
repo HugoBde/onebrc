@@ -1,10 +1,19 @@
 use std::collections::HashMap;
+use std::env::args;
 use std::io::BufRead;
 
 type Info = (f64, f64, f64, u32);
 
 fn main() {
-  let f = std::fs::File::open("data/measurements.txt").unwrap();
+  let args: Vec<_> = args().collect();
+
+  let path = if args.len() == 2 {
+    args[1].as_str()
+  } else {
+    "data/measurements.txt"
+  };
+
+  let f = std::fs::File::open(path).unwrap();
   let f = std::io::BufReader::new(f);
 
   let mut data = HashMap::<String, Info>::new();
