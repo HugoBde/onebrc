@@ -75,13 +75,11 @@ fn parse_neg(bytes: &[u8]) -> i64 {
   let mut out = 0i64;
   for byte in bytes {
     if *byte == b'.' {
-      break;
+      continue;
     }
     out *= 10;
     out -= (byte - b'0') as i64;
   }
-
-  out -= bytes[bytes.len() - 1] as i64;
 
   return out;
 }
@@ -90,13 +88,35 @@ fn parse_pos(bytes: &[u8]) -> i64 {
   let mut out = 0i64;
   for byte in bytes {
     if *byte == b'.' {
-      break;
+      continue;
     }
     out *= 10;
     out += (byte - b'0') as i64;
   }
 
-  out += bytes[bytes.len() - 1] as i64;
-
   return out;
+}
+
+#[cfg(test)]
+mod tests {
+  use crate::my_own_i64_parser;
+
+  #[test]
+  fn i64_parser() {
+    let data = vec![
+      "-58.5", "22.4", "-19.4", "-7.6", "44.7", "45.6", "-38.4", "97.3", "-74.3", "33.8", "42.6",
+      "-81.6", "-69.5", "34.5", "-4.9", "-51.1", "-17.6", "71.1", "40.4", "-71.5", "75.7", "85.3",
+    ];
+
+    let expect = vec![
+      -585, 224, -194, -76, 447, 456, -384, 973, -743, 338, 426, -816, -695, 345, -49, -511, -176,
+      711, 404, -715, 757, 853,
+    ];
+
+    let out: Vec<i64> = data
+      .iter()
+      .map(|s| my_own_i64_parser(s.as_bytes()))
+      .collect();
+    assert_eq!(out, expect);
+  }
 }
