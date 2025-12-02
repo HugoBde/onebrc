@@ -27,7 +27,7 @@ fn main() {
     }
 
     let (station, temp) = l.rsplit_once(|c| *c == b';').unwrap();
-    let temp = my_own_i64_parser(temp);
+    let temp = i64_parser(temp);
 
     match data.get_mut(station) {
       Some(data) => {
@@ -62,46 +62,23 @@ fn main() {
   println!("}}");
 }
 
-fn my_own_i64_parser(bytes: &[u8]) -> i64 {
-  if bytes[0] == b'-' {
-    parse_neg(&bytes[1..])
-  } else {
-    parse_pos(bytes)
+#[rustfmt::skip]
+fn i64_parser(bytes: &[u8]) -> i64 {
+  match (bytes[0], bytes.len()) {
+    (b'-', 5) => {-((bytes[1] - b'0') as i64 * 100 + (bytes[2] - b'0') as i64 * 10 + (bytes[4] - b'0') as i64)},
+    (b'-', 4) => {-(                                 (bytes[1] - b'0') as i64 * 10 + (bytes[3] - b'0') as i64)},
+    (_, 4) =>    {  (bytes[0] - b'0') as i64 * 100 + (bytes[1] - b'0') as i64 * 10 + (bytes[3] - b'0') as i64},
+    (_, 3) =>    {                                   (bytes[0] - b'0') as i64 * 10 + (bytes[2] - b'0') as i64},
+    (_, _) => unreachable!("not possible")
   }
-}
-
-fn parse_neg(bytes: &[u8]) -> i64 {
-  let mut out = 0i64;
-  for byte in bytes {
-    if *byte == b'.' {
-      continue;
-    }
-    out *= 10;
-    out -= (byte - b'0') as i64;
-  }
-
-  return out;
-}
-
-fn parse_pos(bytes: &[u8]) -> i64 {
-  let mut out = 0i64;
-  for byte in bytes {
-    if *byte == b'.' {
-      continue;
-    }
-    out *= 10;
-    out += (byte - b'0') as i64;
-  }
-
-  return out;
 }
 
 #[cfg(test)]
 mod tests {
-  use crate::my_own_i64_parser;
+  use crate::i64_parser;
 
   #[test]
-  fn i64_parser() {
+  fn temperature_parsing() {
     let data = vec![
       "-58.5", "22.4", "-19.4", "-7.6", "44.7", "45.6", "-38.4", "97.3", "-74.3", "33.8", "42.6",
       "-81.6", "-69.5", "34.5", "-4.9", "-51.1", "-17.6", "71.1", "40.4", "-71.5", "75.7", "85.3",
@@ -112,10 +89,7 @@ mod tests {
       711, 404, -715, 757, 853,
     ];
 
-    let out: Vec<i64> = data
-      .iter()
-      .map(|s| my_own_i64_parser(s.as_bytes()))
-      .collect();
+    let out: Vec<i64> = data.iter().map(|s| i64_parser(s.as_bytes())).collect();
     assert_eq!(out, expect);
   }
 }

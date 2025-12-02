@@ -123,3 +123,36 @@ sys     2.71s
 cpu     97%
 
 We can also notice that temperatures are guaranteed to be 3 to 5 characters long: (i.e: 1.2, -12.2). That means the semi colon is always 4 to 6 characters from the end. Let's keep that in mind as we may use this fact down the line to do some further low level optimisation!!
+
+ 
+# Redoing our parsing
++   33.38%     0.00%  onebrc  onebrc  [.] onebrc::i64_parser_old (inlined)
+After the latest improvements, we notice our temperature parsing code is being quite expensive again, let's dive deeper to see where we can improve it
+The code makes use of lots of branching instructions (loops and if statements). These are generally not great for performance as they prevent  instruction pipelining, a mechanism CPUs use to run faster. We rewrote our parsing code to get rid of the for loops, always skip the decimal point without using an if statement, and mashing everything together in a match. Still a branch in a very tight loop, but at least we only have one jump happening per temperature parsing. Our new function is now running about 3 times faster.
+
++   11.58%     0.00%  onebrc  onebrc  onebrc::i64_parser_new (inlined)
+
+NB: When developing my new parsing code, I ran benchmarks on the isolated parsing function. 
+
+The old version gave me those results:
+
+test parser_bench_negative_double_digits ... bench:           2.79 ns/iter (+/- 0.57)
+test parser_bench_negative_single_digits ... bench:           1.86 ns/iter (+/- 0.18)
+test parser_bench_positive_double_digits ... bench:           3.34 ns/iter (+/- 0.44)
+test parser_bench_positive_single_digits ... bench:           2.29 ns/iter (+/- 0.33)
+
+While the new version gave me those results:
+
+test parser_bench_negative_double_digits ... bench:           0.23 ns/iter (+/- 0.02)
+test parser_bench_negative_single_digits ... bench:           0.23 ns/iter (+/- 0.02)
+test parser_bench_positive_double_digits ... bench:           0.24 ns/iter (+/- 0.01)
+test parser_bench_positive_single_digits ... bench:           0.23 ns/iter (+/- 0.04)
+
+That's about a 10x speedup as opposed to the 3x we see in our code. My hypothesis at this point is that the benchmarks run each individual case repeatedly, which (rightfully) tricks the branch predictor (another mechanism the CPU uses to maintain instruction pipelining despite jmp instructions) into pipelining the instructions of the same branch each iteration. In practice, this doesn't work because we keep hitting different branches
+
+
+time output: 
+real    29.38s
+user    27.35s
+sys     1.82s
+cpu     99%
