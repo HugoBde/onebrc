@@ -100,3 +100,26 @@ user    39.51s
 sys     2.14s
 cpu     99%
 
+# The next day
+I changed the measurements data to use one that was generated with the Java generator instead of the Python one, that shaved another ~10%. This is due to reduced collisions in the HashMap I believe, since we now spend less time in HashMap::get_mut
+
+time output:
+real    36.02s
+user    31.65s
+sys     4.08s
+cpu     99%
+
+# Splitting is being expensive again
+As we improve various areas of the code, our earlier improvements start becoming a more important part of our run time again. The first case we can easily tackle is splitting:
++   16.13%     0.00%  onebrc  onebrc  core::slice::<impl [T]>::split_once (inlined)
+And a easy way to improve that is by looking at a line in our data:
+Andorra la Vella;7.5
+And noticing that the semi-colon is closer to the end that the beginning (at least like 99.999% of the time). Why iterate forward when we can start from the end of the line? Let's replace split_once for rsplit_once and shave another 10% of our runtime.
+
+time output:
+real    32.92s
+user    29.43s
+sys     2.71s
+cpu     97%
+
+We can also notice that temperatures are guaranteed to be 3 to 5 characters long: (i.e: 1.2, -12.2). That means the semi colon is always 4 to 6 characters from the end. Let's keep that in mind as we may use this fact down the line to do some further low level optimisation!!

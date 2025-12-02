@@ -26,7 +26,7 @@ fn main() {
       break;
     }
 
-    let (station, temp) = l.split_once(|c| *c == b';').unwrap();
+    let (station, temp) = l.rsplit_once(|c| *c == b';').unwrap();
     let temp = my_own_i64_parser(temp);
 
     match data.get_mut(station) {
