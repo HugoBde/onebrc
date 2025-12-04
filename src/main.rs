@@ -27,7 +27,7 @@ fn main() {
     }
 
     let (station, temp) = l.rsplit_once(|c| *c == b';').unwrap();
-    let temp = i64_parser(temp);
+    let temp = temp_parser(temp);
 
     match data.get_mut(station) {
       Some(data) => {
@@ -63,7 +63,7 @@ fn main() {
 }
 
 #[rustfmt::skip]
-fn i64_parser(bytes: &[u8]) -> i64 {
+fn temp_parser(bytes: &[u8]) -> i64 {
   match (bytes[0], bytes.len()) {
     (b'-', 5) => {-((bytes[1] - b'0') as i64 * 100 + (bytes[2] - b'0') as i64 * 10 + (bytes[4] - b'0') as i64)},
     (b'-', 4) => {-(                                 (bytes[1] - b'0') as i64 * 10 + (bytes[3] - b'0') as i64)},
@@ -75,7 +75,7 @@ fn i64_parser(bytes: &[u8]) -> i64 {
 
 #[cfg(test)]
 mod tests {
-  use crate::i64_parser;
+  use crate::temp_parser;
 
   #[test]
   fn temperature_parsing() {
@@ -89,7 +89,7 @@ mod tests {
       711, 404, -715, 757, 853,
     ];
 
-    let out: Vec<i64> = data.iter().map(|s| i64_parser(s.as_bytes())).collect();
+    let out: Vec<i64> = data.iter().map(|s| temp_parser(s.as_bytes())).collect();
     assert_eq!(out, expect);
   }
 }
