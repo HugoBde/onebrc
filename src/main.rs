@@ -1,11 +1,17 @@
 #![feature(slice_split_once)]
+#![feature(portable_simd)]
 
 use std::env::args;
+use std::ptr::read_unaligned;
+use std::simd::Simd;
+use std::simd::cmp::SimdPartialEq;
 
 use memmap2::Mmap;
 use rustc_hash::FxHashMap;
 
 type Info = (i64, i64, i64, u32);
+
+const SIMD_LANES: usize = 16;
 
 fn main() {
   let args: Vec<_> = args().collect();
@@ -62,6 +68,31 @@ fn main() {
   println!("}}");
 }
 
+fn rsplit_once<'l>(line: &'l [u8]) -> (&'l [u8], &'l [u8]) {
+  let mut offset = 0;
+
+  while offset + SIMD_LANES < line.len() {
+    let s = unsafe { read_unaligned(line[offset..].as_ptr() as *const Simd<u8, SIMD_LANES>) };
+    if let Some(index) = simd_find(s) {
+      return (&line[..offset + index], &line[offset + index + 1..]);
+    }
+    offset += SIMD_LANES;
+  }
+
+  let s = Simd::<u8, SIMD_LANES>::load_or_default(&line[offset..]);
+
+  let index = simd_find(s).unwrap();
+  return (&line[..offset + index], &line[offset + index + 1..]);
+}
+
+// const NEW_LINE_SIMD: Simd<u8, SIMD_LANES> = Simd::<u8,
+// SIMD_LANES>::splat(b'\n');
+const SEMI_COLON_SIMD: Simd<u8, SIMD_LANES> = Simd::<u8, SIMD_LANES>::splat(b';');
+
+fn simd_find(s: Simd<u8, SIMD_LANES>) -> Option<usize> {
+  SEMI_COLON_SIMD.simd_eq(s).first_set()
+}
+
 #[rustfmt::skip]
 fn temp_parser(bytes: &[u8]) -> i64 {
   match (bytes[0], bytes.len()) {
@@ -75,7 +106,44 @@ fn temp_parser(bytes: &[u8]) -> i64 {
 
 #[cfg(test)]
 mod tests {
-  use crate::temp_parser;
+  use crate::{rsplit_once, temp_parser};
+
+  #[test]
+  fn line_splitter() {
+    let lines: Vec<_> = vec![
+      "Pontianak;40.9",
+      "Edmonton;1.7",
+      "Suva;32.5",
+      "Boston;16.3",
+      "Las Vegas;20.6",
+      "Prague;0.7",
+      "Ndola;22.8",
+      "Lyon;25.6",
+      "Antsiranana;19.6",
+      "Ashgabat;19.1",
+      "Valencia;13.0",
+      "Damascus;17.1",
+      "Boise;13.4",
+      "Nouakchott;20.8",
+      "Lahore;8.8",
+      "Belgrade;22.3",
+      "Yerevan;13.6",
+      "Ségou;43.4",
+      "Andorra la Vella;7.5",
+    ]
+    .iter()
+    .map(|l| l.as_bytes())
+    .collect();
+
+    let expect: Vec<_> = lines
+      .iter()
+      .map(|l| l.rsplit_once(|c| *c == b';').unwrap())
+      .collect();
+
+    let res: Vec<_> = lines.iter().map(|l| rsplit_once(l)).collect();
+
+    assert_eq!(res, expect);
+  }
 
   #[test]
   fn temperature_parsing() {
